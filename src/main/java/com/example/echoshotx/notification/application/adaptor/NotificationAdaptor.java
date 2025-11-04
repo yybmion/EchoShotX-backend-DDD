@@ -109,4 +109,38 @@ public class NotificationAdaptor {
             throw new NotificationHandler(NotificationErrorStatus.NOTIFICATION_ACCESS_DENIED);
         }
     }
+
+    // === Command Methods (Write Operations) ===
+
+    /**
+     * Save notification
+     */
+    @Transactional
+    public Notification save(Notification notification) {
+        return notificationRepository.save(notification);
+    }
+
+    /**
+     * Save multiple notifications
+     */
+    @Transactional
+    public List<Notification> saveAll(List<Notification> notifications) {
+        return notificationRepository.saveAll(notifications);
+    }
+
+    /**
+     * Delete notification by ID
+     */
+    @Transactional
+    public void delete(Long notificationId) {
+        notificationRepository.deleteById(notificationId);
+    }
+
+    /**
+     * Delete old notifications (for cleanup)
+     */
+    @Transactional
+    public void deleteOldNotifications(LocalDateTime cutoffDate) {
+        notificationRepository.deleteByCreatedDateBefore(cutoffDate);
+    }
 }

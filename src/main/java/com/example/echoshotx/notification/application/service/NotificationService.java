@@ -2,12 +2,8 @@ package com.example.echoshotx.notification.application.service;
 
 import com.example.echoshotx.notification.application.adaptor.NotificationAdaptor;
 import com.example.echoshotx.notification.domain.entity.Notification;
-import com.example.echoshotx.notification.domain.entity.NotificationStatus;
 import com.example.echoshotx.notification.domain.entity.NotificationType;
-import com.example.echoshotx.notification.domain.exception.NotificationErrorStatus;
-import com.example.echoshotx.notification.infrastructure.persistence.NotificationRepository;
 import com.example.echoshotx.notification.presentation.dto.response.NotificationResponse;
-import com.example.echoshotx.notification.presentation.exception.NotificationHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,7 +19,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class NotificationService {
 
-    private final NotificationRepository notificationRepository;
     private final NotificationAdaptor notificationAdaptor;
     private final SseConnectionManager sseConnectionManager;
 
@@ -42,7 +37,7 @@ public class NotificationService {
                 memberId, videoId, type, title, content);
 
         // 알림 저장
-        notification = notificationRepository.save(notification);
+        notification = notificationAdaptor.save(notification);
         log.info("Video notification created: id={}, memberId={}, type={}",
                 notification.getId(), memberId, type);
 
@@ -67,7 +62,7 @@ public class NotificationService {
                 memberId, creditHistoryId, type, title, content);
 
         // 알림 저장
-        notification = notificationRepository.save(notification);
+        notification = notificationAdaptor.save(notification);
         log.info("Credit notification created: id={}, memberId={}, type={}",
                 notification.getId(), memberId, type);
 
@@ -90,7 +85,7 @@ public class NotificationService {
                 memberId, title, content);
 
         // 알림 저장
-        notification = notificationRepository.save(notification);
+        notification = notificationAdaptor.save(notification);
         log.info("System notification created: id={}, memberId={}",
                 notification.getId(), memberId);
 
@@ -110,16 +105,16 @@ public class NotificationService {
 
             if (sent) {
                 notification.markAsSent();
-                notificationRepository.save(notification);
+                notificationAdaptor.save(notification);
                 log.info("Notification sent successfully: id={}", notification.getId());
             } else {
                 notification.markAsFailed();
-                notificationRepository.save(notification);
+                notificationAdaptor.save(notification);
                 log.warn("Failed to send notification (no active connection): id={}", notification.getId());
             }
         } catch (Exception e) {
             notification.markAsFailed();
-            notificationRepository.save(notification);
+            notificationAdaptor.save(notification);
             log.error("Error sending notification: id={}, error={}", notification.getId(), e.getMessage(), e);
         }
     }
@@ -133,7 +128,7 @@ public class NotificationService {
 
         Notification notification = notificationAdaptor.queryById(notificationId);
         notification.markAsRead();
-        notificationRepository.save(notification);
+        notificationAdaptor.save(notification);
 
         log.info("Notification marked as read: id={}, memberId={}", notificationId, memberId);
     }
@@ -148,7 +143,7 @@ public class NotificationService {
             notification.markAsRead();
         }
 
-        notificationRepository.saveAll(unreadNotifications);
+        notificationAdaptor.saveAll(unreadNotifications);
         log.info("All notifications marked as read for member: {}, count: {}",
                 memberId, unreadNotifications.size());
     }
@@ -160,7 +155,7 @@ public class NotificationService {
         // 소유권 검증
         notificationAdaptor.validateNotificationOwnership(notificationId, memberId);
 
-        notificationRepository.deleteById(notificationId);
+        notificationAdaptor.delete(notificationId);
         log.info("Notification deleted: id={}, memberId={}", notificationId, memberId);
     }
 
@@ -223,7 +218,7 @@ public class NotificationService {
 
             try {
                 notification.resetForRetry();
-                notificationRepository.save(notification);
+                notificationAdaptor.save(notification);
                 sendNotificationRealtime(notification);
             } catch (Exception e) {
                 log.error("Error retrying notification: id={}, error={}",
@@ -237,7 +232,7 @@ public class NotificationService {
      */
     public void deleteOldNotifications() {
         LocalDateTime cutoffDate = LocalDateTime.now().minusDays(30);
-        notificationRepository.deleteByCreatedDateBefore(cutoffDate);
+        notificationAdaptor.deleteOldNotifications(cutoffDate);
         log.info("Deleted notifications older than: {}", cutoffDate);
     }
 }
