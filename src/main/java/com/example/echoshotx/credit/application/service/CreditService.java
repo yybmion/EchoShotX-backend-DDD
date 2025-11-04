@@ -4,10 +4,14 @@ import com.example.echoshotx.credit.domain.entity.CreditHistory;
 import com.example.echoshotx.credit.infrastructure.persistence.CreditHistoryRepository;
 import com.example.echoshotx.member.application.adaptor.MemberAdaptor;
 import com.example.echoshotx.member.domain.entity.Member;
+import com.example.echoshotx.notification.application.event.CreditChargedEvent;
+import com.example.echoshotx.notification.application.event.CreditRefundedEvent;
+import com.example.echoshotx.notification.application.event.CreditUsedEvent;
 import com.example.echoshotx.video.domain.entity.ProcessingType;
 import com.example.echoshotx.video.domain.entity.Video;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +23,7 @@ public class CreditService {
 
     private final MemberAdaptor memberAdaptor;
     private final CreditHistoryRepository creditHistoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 크레딧 사용 (영상 처리용)
@@ -29,13 +34,20 @@ public class CreditService {
 
         // 필요 크레딧 계산
         int requiredCredits = calculateRequiredCredits(processingType, video.getOriginalMetadata().getDurationSeconds());
-        
+
         // 회원 크레딧 차감
         member.useCredits(requiredCredits);
 
         // 사용 내역 기록
         CreditHistory creditHistory = CreditHistory.createUsage(memberId, video.getId(), requiredCredits, processingType);
-        return creditHistoryRepository.save(creditHistory);
+        creditHistory = creditHistoryRepository.save(creditHistory);
+
+        // 이벤트 발행 (알림 생성)
+        eventPublisher.publishEvent(new CreditUsedEvent(
+                memberId, creditHistory.getId(), requiredCredits, video.getId()));
+        log.info("Published CreditUsedEvent for member: {}, amount: {}", memberId, requiredCredits);
+
+        return creditHistory;
     }
 
     private int calculateRequiredCredits(ProcessingType processingType, Double videoDurationSeconds) {
@@ -50,13 +62,20 @@ public class CreditService {
      */
     public CreditHistory addCredits(Long memberId, Integer amount, String description) {
         Member member = memberAdaptor.queryById(memberId);
-        
+
         // 회원 크레딧 충전
         member.addCredits(amount);
-        
+
         // 충전 내역 기록
         CreditHistory creditHistory = CreditHistory.createCharge(memberId, amount, description);
-        return creditHistoryRepository.save(creditHistory);
+        creditHistory = creditHistoryRepository.save(creditHistory);
+
+        // 이벤트 발행 (알림 생성)
+        eventPublisher.publishEvent(new CreditChargedEvent(
+                memberId, creditHistory.getId(), amount));
+        log.info("Published CreditChargedEvent for member: {}, amount: {}", memberId, amount);
+
+        return creditHistory;
     }
     
     /**
@@ -72,13 +91,20 @@ public class CreditService {
      */
     public CreditHistory refundCredits(Long memberId, Long videoId, Integer amount, String reason) {
         Member member = memberAdaptor.queryById(memberId);
-        
+
         // 회원 크레딧 환불
         member.addCredits(amount);
-        
+
         // 환불 내역 기록
         CreditHistory creditHistory = CreditHistory.createRefund(memberId, videoId, amount, reason);
-        return creditHistoryRepository.save(creditHistory);
+        creditHistory = creditHistoryRepository.save(creditHistory);
+
+        // 이벤트 발행 (알림 생성)
+        eventPublisher.publishEvent(new CreditRefundedEvent(
+                memberId, creditHistory.getId(), amount, reason));
+        log.info("Published CreditRefundedEvent for member: {}, amount: {}", memberId, amount);
+
+        return creditHistory;
     }
 
     /**
@@ -100,13 +126,20 @@ public class CreditService {
      */
     public CreditHistory refundCredits(Long memberId, Integer amount, String reason) {
         Member member = memberAdaptor.queryById(memberId);
-        
+
         // 회원 크레딧 환불
         member.addCredits(amount);
-        
+
         // 환불 내역 기록
         CreditHistory creditHistory = CreditHistory.createRefund(memberId, null, amount, reason);
-        return creditHistoryRepository.save(creditHistory);
+        creditHistory = creditHistoryRepository.save(creditHistory);
+
+        // 이벤트 발행 (알림 생성)
+        eventPublisher.publishEvent(new CreditRefundedEvent(
+                memberId, creditHistory.getId(), amount, reason));
+        log.info("Published CreditRefundedEvent for member: {}, amount: {}", memberId, amount);
+
+        return creditHistory;
     }
 
 }
