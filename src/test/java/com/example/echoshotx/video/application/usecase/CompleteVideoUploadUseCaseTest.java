@@ -2,7 +2,7 @@ package com.example.echoshotx.video.application.usecase;
 
 import com.example.echoshotx.credit.application.service.CreditService;
 import com.example.echoshotx.credit.domain.entity.CreditHistory;
-import com.example.echoshotx.credit.domain.entity.CreditTransactionType;
+import com.example.echoshotx.credit.domain.entity.TransactionType;
 import com.example.echoshotx.member.domain.entity.Member;
 import com.example.echoshotx.member.domain.entity.Role;
 import com.example.echoshotx.video.application.adaptor.VideoAdaptor;
@@ -149,7 +149,7 @@ class CompleteVideoUploadUseCaseTest {
                 .id(1L)
                 .memberId(1L)
                 .videoId(100L)
-                .transactionType(CreditTransactionType.USAGE)
+                .transactionType(TransactionType.USAGE)
                 .amount(-100)
                 .description("Video processing for BASIC_ENHANCEMENT")
                 .build();
