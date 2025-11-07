@@ -169,6 +169,67 @@ public class Video extends BaseTimeEntity {
 
 
     // business
+
+    /**
+     * 업로드 완료 처리 (클라이언트가 S3 업로드 완료 후 호출)
+     */
+    public void completeUpload(VideoMetadata metadata) {
+        if (this.status != VideoStatus.PENDING_UPLOAD) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
+        }
+        this.status = VideoStatus.UPLOAD_COMPLETED;
+        this.originalMetadata = metadata;
+        this.uploadCompletedAt = LocalDateTime.now();
+    }
+
+    /**
+     * AI 처리 대기열에 추가됨
+     */
+    public void enqueueForProcessing(String sqsMessageId) {
+        if (this.status != VideoStatus.UPLOAD_COMPLETED) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
+        }
+        this.status = VideoStatus.QUEUED;
+        this.sqsMessageId = sqsMessageId;
+    }
+
+    /**
+     * AI 처리 시작
+     */
+    public void startProcessing(String aiJobId) {
+        if (this.status != VideoStatus.QUEUED) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
+        }
+        this.status = VideoStatus.PROCESSING;
+        this.aiJobId = aiJobId;
+        this.processingStartedAt = LocalDateTime.now();
+    }
+
+    /**
+     * AI 처리 완료
+     */
+    public void completeProcessing(ProcessedVideo processedVideo, VideoMetadata processedMetadata) {
+        if (this.status != VideoStatus.PROCESSING && this.status != VideoStatus.QUEUED) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
+        }
+        this.status = VideoStatus.COMPLETED;
+        this.processedVideo = processedVideo;
+        this.processedMetadata = processedMetadata;
+        this.processingCompletedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 처리 실패
+     */
+    public void failProcessing(String errorMessage) {
+        if (this.status != VideoStatus.PROCESSING && this.status != VideoStatus.QUEUED) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
+        }
+        this.status = VideoStatus.FAILED;
+        this.errorMessage = errorMessage;
+        this.retryCount++;
+    }
+
     // 원본 파일 삭제
     public void markOriginalAsDeleted() {
         if (this.status != VideoStatus.COMPLETED) {
