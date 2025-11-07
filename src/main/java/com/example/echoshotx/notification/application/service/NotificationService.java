@@ -48,31 +48,6 @@ public class NotificationService {
     }
 
     /**
-     * 크레딧 관련 알림 생성 및 전송
-     */
-    public Notification createAndSendCreditNotification(
-            Long memberId,
-            Long creditHistoryId,
-            NotificationType type,
-            String title,
-            String content
-    ) {
-        // 도메인 팩토리 메서드로 생성
-        Notification notification = Notification.createCreditNotification(
-                memberId, creditHistoryId, type, title, content);
-
-        // 알림 저장
-        notification = notificationAdaptor.save(notification);
-        log.info("Credit notification created: id={}, memberId={}, type={}",
-                notification.getId(), memberId, type);
-
-        // 실시간 전송 시도
-        sendNotificationRealtime(notification);
-
-        return notification;
-    }
-
-    /**
      * 시스템 알림 생성 및 전송
      */
     public Notification createAndSendSystemNotification(
