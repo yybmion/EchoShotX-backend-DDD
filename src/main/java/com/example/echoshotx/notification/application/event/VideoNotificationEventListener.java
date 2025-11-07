@@ -21,20 +21,6 @@ public class VideoNotificationEventListener {
 
     @Async
     @EventListener
-    public void handleVideoUploadCompleted(VideoUploadCompletedEvent event) {
-        log.info("Handling VideoUploadCompletedEvent for video: {}", event.getVideoId());
-
-        notificationService.createAndSendVideoNotification(
-                event.getMemberId(),
-                event.getVideoId(),
-                NotificationType.VIDEO_UPLOAD_COMPLETED,
-                "영상 업로드 완료",
-                String.format("'%s' 영상 업로드가 완료되었습니다.", event.getFileName())
-        );
-    }
-
-    @Async
-    @EventListener
     public void handleVideoProcessingStarted(VideoProcessingStartedEvent event) {
         log.info("Handling VideoProcessingStartedEvent for video: {}", event.getVideoId());
 

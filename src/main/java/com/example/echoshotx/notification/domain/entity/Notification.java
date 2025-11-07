@@ -91,29 +91,6 @@ public class Notification extends BaseTimeEntity {
     }
 
     /**
-     * Factory method for creating credit-related notifications
-     */
-    public static Notification createCreditNotification(
-            Long memberId,
-            Long creditHistoryId,
-            NotificationType type,
-            String title,
-            String content
-    ) {
-        validateCreditNotificationType(type);
-        return Notification.builder()
-                .memberId(memberId)
-                .creditHistoryId(creditHistoryId)
-                .type(type)
-                .title(title)
-                .content(content)
-                .isRead(false)
-                .status(NotificationStatus.PENDING)
-                .retryCount(0)
-                .build();
-    }
-
-    /**
      * Factory method for creating system notifications
      */
     public static Notification createSystemNotification(
@@ -178,19 +155,10 @@ public class Notification extends BaseTimeEntity {
     // Domain validation methods
 
     private static void validateVideoNotificationType(NotificationType type) {
-        if (type != NotificationType.VIDEO_UPLOAD_COMPLETED &&
-            type != NotificationType.VIDEO_PROCESSING_STARTED &&
+        if (type != NotificationType.VIDEO_PROCESSING_STARTED &&
             type != NotificationType.VIDEO_PROCESSING_COMPLETED &&
             type != NotificationType.VIDEO_PROCESSING_FAILED) {
             throw new IllegalArgumentException("Invalid video notification type: " + type);
-        }
-    }
-
-    private static void validateCreditNotificationType(NotificationType type) {
-        if (type != NotificationType.CREDIT_CHARGED &&
-            type != NotificationType.CREDIT_USED &&
-            type != NotificationType.CREDIT_REFUNDED) {
-            throw new IllegalArgumentException("Invalid credit notification type: " + type);
         }
     }
 }
