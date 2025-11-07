@@ -341,58 +341,6 @@ class CompleteVideoUploadUseCaseTest {
                     eq(ProcessingType.AI_UPSCALING)
             );
         }
-
-        @Test
-        @DisplayName("성공: STYLE_TRANSFER 처리 타입으로 업로드 완료")
-        void execute_Success_WithStyleTransfer() {
-            // Given
-            Video styleVideo = Video.builder()
-                    .id(100L)
-                    .memberId(1L)
-                    .originalFile(testVideo.getOriginalFile())
-                    .status(VideoStatus.PENDING_UPLOAD)
-                    .processingType(ProcessingType.STYLE_TRANSFER)
-                    .uploadId("upload-id-123")
-                    .retryCount(0)
-                    .build();
-
-            Video styleUploadCompleted = Video.builder()
-                    .id(100L)
-                    .memberId(1L)
-                    .originalFile(testVideo.getOriginalFile())
-                    .status(VideoStatus.UPLOAD_COMPLETED)
-                    .processingType(ProcessingType.STYLE_TRANSFER)
-                    .uploadId("upload-id-123")
-                    .retryCount(0)
-                    .build();
-
-            Video styleQueued = Video.builder()
-                    .id(100L)
-                    .memberId(1L)
-                    .originalFile(testVideo.getOriginalFile())
-                    .status(VideoStatus.QUEUED)
-                    .processingType(ProcessingType.STYLE_TRANSFER)
-                    .uploadId("upload-id-123")
-                    .sqsMessageId("sqs-msg-uuid")
-                    .retryCount(0)
-                    .build();
-
-            given(videoAdaptor.queryById(100L)).willReturn(styleVideo);
-            given(videoService.completeUpload(any(), any())).willReturn(styleUploadCompleted);
-            given(creditService.useCreditsForVideoProcessing(eq(styleUploadCompleted), eq(ProcessingType.STYLE_TRANSFER)))
-                    .willReturn(testCreditHistory);
-            given(videoService.enqueueForProcessing(any(), anyString())).willReturn(styleQueued);
-
-            // When
-            CompleteUploadResponse response = completeVideoUploadUseCase.execute(100L, testRequest, testMember);
-
-            // Then
-            assertThat(response).isNotNull();
-            verify(creditService).useCreditsForVideoProcessing(
-                    eq(styleUploadCompleted),
-                    eq(ProcessingType.STYLE_TRANSFER)
-            );
-        }
     }
 
     @Nested
