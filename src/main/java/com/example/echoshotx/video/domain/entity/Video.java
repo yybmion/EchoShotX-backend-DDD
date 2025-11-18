@@ -191,9 +191,11 @@ public class Video extends BaseTimeEntity {
 
   /**
    * AI 처리 시작.
+   *
+   * <p>UPLOAD_COMPLETED 또는 QUEUED 상태에서 PROCESSING으로 전환됩니다.
    */
   public void startProcessing(String aiJobId) {
-	if (this.status != VideoStatus.QUEUED) {
+	if (this.status != VideoStatus.QUEUED && this.status != VideoStatus.UPLOAD_COMPLETED) {
 	  throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
 	}
 	this.status = VideoStatus.PROCESSING;

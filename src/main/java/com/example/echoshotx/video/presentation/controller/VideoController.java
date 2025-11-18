@@ -8,10 +8,12 @@ import com.example.echoshotx.video.application.usecase.GetVideoUseCase;
 import com.example.echoshotx.video.application.usecase.InitiateVideoUploadUseCase;
 import com.example.echoshotx.video.application.usecase.ProcessingCompletedWebhookUseCase;
 import com.example.echoshotx.video.application.usecase.ProcessingFailedWebhookUseCase;
+import com.example.echoshotx.video.application.usecase.ProcessingProgressWebhookUseCase;
 import com.example.echoshotx.video.presentation.dto.request.CompleteUploadRequest;
 import com.example.echoshotx.video.presentation.dto.request.InitiateUploadRequest;
 import com.example.echoshotx.video.presentation.dto.request.WebhookProcessingCompletedRequest;
 import com.example.echoshotx.video.presentation.dto.request.WebhookProcessingFailedRequest;
+import com.example.echoshotx.video.presentation.dto.request.WebhookProcessingProgressRequest;
 import com.example.echoshotx.video.presentation.dto.response.CompleteUploadResponse;
 import com.example.echoshotx.video.presentation.dto.response.InitiateUploadResponse;
 import com.example.echoshotx.video.presentation.dto.response.VideoDetailResponse;
@@ -38,8 +40,7 @@ public class VideoController {
   private final CompleteVideoUploadUseCase completeVideoUploadUseCase;
   private final ProcessingCompletedWebhookUseCase processingCompletedWebhookUseCase;
   private final ProcessingFailedWebhookUseCase processingFailedWebhookUseCase;
-
-  // TODO: 이후 메서드 (업로드 시작, 완료, 조회, Webhook 등) 추가
+  private final ProcessingProgressWebhookUseCase processingProgressWebhookUseCase;
 
   @Operation(summary = "영상 조회", description = "영상 ID로 영상 정보를 조회합니다")
   @GetMapping("/{videoId}")
@@ -120,6 +121,24 @@ public class VideoController {
 	  @Valid @RequestBody WebhookProcessingFailedRequest request) {
 
 	processingFailedWebhookUseCase.execute(request);
+	return ApiResponseDto.onSuccess(null);
+  }
+
+  /**
+   * AI 처리 진행률 웹훅.
+   *
+   * <p>AI 서버에서 처리 진행률을 전송하는 엔드포인트로, 진행률을 로깅하고 향후 SSE로 전송할 수 있다.
+   */
+  @Operation(
+	  summary = "AI 처리 진행률 웹훅",
+	  description =
+		  "AI 서버에서 처리 진행률을 전송하는 웹훅 엔드포인트입니다. "
+			  + "진행률을 로깅하며, 향후 SSE를 통한 실시간 전송을 지원할 수 있습니다.")
+  @PostMapping("/webhook/processing-progress")
+  public ApiResponseDto<Void> processingProgressWebhook(
+	  @Valid @RequestBody WebhookProcessingProgressRequest request) {
+
+	processingProgressWebhookUseCase.execute(request);
 	return ApiResponseDto.onSuccess(null);
   }
 

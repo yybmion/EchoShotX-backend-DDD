@@ -76,6 +76,32 @@ public class VideoService {
   }
 
   /**
+   * AI 처리를 시작하고 처리 시작 이벤트를 발행한다.
+   *
+   * <p>UPLOAD_COMPLETED 또는 QUEUED → PROCESSING 상태 전환.
+   *
+   * @param video 영상 엔티티
+   * @param aiJobId AI 서버에서 발급한 작업 ID
+   * @return 업데이트된 영상 엔티티
+   */
+  @Transactional
+  public Video startProcessing(Video video, String aiJobId) {
+	video.startProcessing(aiJobId);
+	video = videoRepository.save(video);
+
+	// 처리 시작 이벤트 발행
+	eventPublisher.publishEvent(
+		new VideoProcessingStartedEvent(
+			video.getId(),
+			video.getMemberId(),
+			video.getOriginalFile().getFileName(),
+			video.getProcessingType().name()));
+	log.info("Published VideoProcessingStartedEvent for video: {}, aiJobId={}", video.getId(), aiJobId);
+
+	return video;
+  }
+
+  /**
    * AI 처리가 완료되면 엔티티를 갱신하고 완료 이벤트를 발행한다.
    */
   @Transactional
