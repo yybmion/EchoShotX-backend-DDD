@@ -41,7 +41,11 @@ public enum VideoErrorStatus implements BaseCode {
 
     // 처리 에러 (4330 ~ 4340)
     VIDEO_NOT_COMPLETED(BAD_REQUEST, 4330, "비디오 처리가 완료되지 않았습니다."),
-    VIDEO_PROCESSED_FILE_NOT_EXISTS(BAD_REQUEST, 4331, "처리된 비디오 파일이 존재하지 않습니다.")
+    VIDEO_PROCESSED_FILE_NOT_EXISTS(BAD_REQUEST, 4331, "처리된 비디오 파일이 존재하지 않습니다."),
+
+    // 진행률 관련 에러 (4340 ~ 4350)
+    VIDEO_INVALID_STATUS_FOR_PROGRESS_UPDATE(BAD_REQUEST, 4340, "진행률을 업데이트할 수 없는 상태입니다."),
+    VIDEO_INVALID_PROGRESS_PERCENTAGE(BAD_REQUEST, 4341, "진행률은 0에서 100 사이여야 합니다.")
     ;
 
     private final HttpStatus httpStatus;

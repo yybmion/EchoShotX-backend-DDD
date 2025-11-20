@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * 영상 관련 이벤트를 수신하여 알림을 생성하는 리스너.
@@ -60,5 +62,27 @@ public class VideoNotificationEventListener {
 		String.format(
 			"'%s' 영상 처리가 실패했습니다. 사유: %s",
 			event.getFileName(), event.getReason()));
+  }
+
+  /**
+   * 영상 처리 진행률 업데이트 이벤트 처리.
+   * 트랜잭션 커밋 후에 실행되며, SSE를 통해 클라이언트에 실시간 전송합니다.
+   * 진행률은 DB에 저장하지 않고 SSE로만 전송합니다.
+   */
+  @Async
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handleVideoProcessingProgress(VideoProcessingProgressEvent event) {
+	log.debug(
+		"Handling VideoProcessingProgressEvent for video: {}, progress: {}%",
+		event.getVideoId(),
+		event.getProgressPercentage());
+
+	// SSE로 실시간 전송 (DB에 저장하지 않음)
+	notificationService.sendProgressUpdate(
+		event.getMemberId(),
+		event.getVideoId(),
+		event.getProgressPercentage(),
+		event.getEstimatedTimeLeftSeconds(),
+		event.getCurrentStep());
   }
 }

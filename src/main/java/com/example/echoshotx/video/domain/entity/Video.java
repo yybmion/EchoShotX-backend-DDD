@@ -111,6 +111,16 @@ public class Video extends BaseTimeEntity {
     @Builder.Default
     @Column(name = "retry_count")
     private Integer retryCount = 0;
+
+    // == 진행률 추적 ==
+    @Column(name = "processing_progress_percentage")
+    private Integer processingProgressPercentage; // 0-100
+
+    @Column(name = "estimated_time_left_seconds")
+    private Integer estimatedTimeLeftSeconds; // 예상 남은 시간 (초)
+
+    @Column(name = "current_processing_step", length = 100)
+    private String currentProcessingStep; // 현재 처리 단계 (예: "영상 분석 중", "AI 처리 중", "인코딩 중")
     // ====
 
     // == presigned url ==
@@ -199,6 +209,25 @@ public class Video extends BaseTimeEntity {
 	this.status = VideoStatus.PROCESSING;
 	this.aiJobId = aiJobId;
 	this.processingStartedAt = LocalDateTime.now();
+	this.processingProgressPercentage = 0; // 초기화
+  }
+
+  /**
+   * 처리 진행률 업데이트.
+   */
+  public void updateProcessingProgress(
+	  Integer progressPercentage, Integer estimatedTimeLeft, String currentStep) {
+	if (this.status != VideoStatus.PROCESSING && this.status != VideoStatus.QUEUED) {
+	  throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_FOR_PROGRESS_UPDATE);
+	}
+
+	if (progressPercentage != null && (progressPercentage < 0 || progressPercentage > 100)) {
+	  throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_PROGRESS_PERCENTAGE);
+	}
+
+	this.processingProgressPercentage = progressPercentage;
+	this.estimatedTimeLeftSeconds = estimatedTimeLeft;
+	this.currentProcessingStep = currentStep;
   }
 
   /**

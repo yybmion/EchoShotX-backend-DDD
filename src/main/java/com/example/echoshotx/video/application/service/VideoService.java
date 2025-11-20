@@ -2,6 +2,7 @@ package com.example.echoshotx.video.application.service;
 
 import com.example.echoshotx.notification.application.event.VideoProcessingCompletedEvent;
 import com.example.echoshotx.notification.application.event.VideoProcessingFailedEvent;
+import com.example.echoshotx.notification.application.event.VideoProcessingProgressEvent;
 import com.example.echoshotx.notification.application.event.VideoProcessingStartedEvent;
 import com.example.echoshotx.video.domain.entity.ProcessingType;
 import com.example.echoshotx.video.domain.entity.Video;
@@ -111,6 +112,32 @@ public class VideoService {
 			video.getOriginalFile().getFileName(),
 			errorMessage));
 	log.info("Published VideoProcessingFailedEvent for video: {}", video.getId());
+
+	return video;
+  }
+
+  /**
+   * AI 처리 진행률을 업데이트하고 진행률 이벤트를 발행한다.
+   */
+  @Transactional
+  public Video updateProcessingProgress(
+	  Video video, Integer progressPercentage, Integer estimatedTimeLeft, String currentStep) {
+
+	video.updateProcessingProgress(progressPercentage, estimatedTimeLeft, currentStep);
+	video = videoRepository.save(video);
+
+	// 진행률 업데이트 이벤트 발행
+	eventPublisher.publishEvent(
+		new VideoProcessingProgressEvent(
+			video.getId(),
+			video.getMemberId(),
+			progressPercentage,
+			estimatedTimeLeft,
+			currentStep));
+	log.debug(
+		"Published VideoProcessingProgressEvent for video: {}, progress: {}%",
+		video.getId(),
+		progressPercentage);
 
 	return video;
   }

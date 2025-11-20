@@ -4,6 +4,7 @@ import com.example.echoshotx.notification.application.adaptor.NotificationAdapto
 import com.example.echoshotx.notification.domain.entity.Notification;
 import com.example.echoshotx.notification.domain.entity.NotificationType;
 import com.example.echoshotx.notification.presentation.dto.response.NotificationResponse;
+import com.example.echoshotx.notification.presentation.dto.response.VideoProgressResponse;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -175,5 +176,43 @@ public class NotificationService {
 	LocalDateTime cutoffDate = LocalDateTime.now().minusDays(30);
 	notificationAdaptor.deleteOldNotifications(cutoffDate);
 	log.info("Deleted notifications older than: {}", cutoffDate);
+  }
+
+  /**
+   * 비디오 처리 진행률 업데이트를 SSE로 전송.
+   * 진행률은 DB에 저장하지 않고 실시간 전송만 수행합니다.
+   */
+  public void sendProgressUpdate(
+	  Long memberId,
+	  Long videoId,
+	  Integer progressPercentage,
+	  Integer estimatedTimeLeft,
+	  String currentStep) {
+
+	// 진행률 응답 생성
+	VideoProgressResponse response =
+		VideoProgressResponse.builder()
+			.videoId(videoId)
+			.progressPercentage(progressPercentage)
+			.estimatedTimeLeftSeconds(estimatedTimeLeft)
+			.currentStep(currentStep)
+			.timestamp(LocalDateTime.now())
+			.build();
+
+	// SSE로 실시간 전송 (DB에 저장하지 않음)
+	boolean sent = sseConnectionManager.sendToMember(memberId, response);
+
+	if (!sent) {
+	  log.debug(
+		  "Failed to send progress update (no active SSE connection): memberId={}, videoId={}",
+		  memberId,
+		  videoId);
+	} else {
+	  log.debug(
+		  "Progress update sent: memberId={}, videoId={}, progress={}%",
+		  memberId,
+		  videoId,
+		  progressPercentage);
+	}
   }
 }
