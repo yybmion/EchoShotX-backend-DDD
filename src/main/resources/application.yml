@@ -103,38 +103,7 @@ cloud:
       fifo: true
       message-group-id: {{ secrets.AWS_SQS_MESSAGE_GROUP_ID }} # 환경변수 필요
 
-# AI 서버 설정
-ai:
-  server:
-    base-url: {{ secrets.AI_SERVER_BASE_URL | default('http://ai-server:8000') }}
-    connection-timeout: 30000
-    read-timeout: 1800000  # 30분
-    write-timeout: 30000
-    max-connections: 100
-
 # Webhook 보안 설정
 webhook:
   secret-key: {{ secrets.WEBHOOK_SECRET_KEY | default('default-secret-key-change-in-production') }}
-
-# Resilience4j 설정
-resilience4j:
-  circuitbreaker:
-    instances:
-      aiServer:
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 30s
-        sliding-window-size: 10
-        minimum-number-of-calls: 5
-        permitted-number-of-calls-in-half-open-state: 3
-        slow-call-rate-threshold: 50
-        slow-call-duration-threshold: 5m
-  retry:
-    instances:
-      aiServer:
-        max-attempts: 3
-        wait-duration: 2s
-  timelimiter:
-    instances:
-      aiServer:
-        timeout-duration: 30m
 
