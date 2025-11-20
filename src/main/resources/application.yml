@@ -109,6 +109,8 @@ ai:
     read-timeout: 1800000  # 30분
     write-timeout: 30000
     max-connections: 100
+    webhook:
+      api-key: {{ secrets.AI_WEBHOOK_API_KEY }}  # AI 서버가 웹훅 호출 시 사용하는 API Key
 
 # Resilience4j 설정
 resilience4j:

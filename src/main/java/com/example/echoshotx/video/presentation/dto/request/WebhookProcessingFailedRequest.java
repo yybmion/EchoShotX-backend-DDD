@@ -20,6 +20,12 @@ public class WebhookProcessingFailedRequest {
   @NotBlank(message = "aiJobId는 필수입니다.")
   private String aiJobId;
 
+  /**
+   * 멱등성 보장을 위한 요청 ID (선택사항).
+   * 같은 requestId가 여러 번 전송되어도 한 번만 처리됩니다.
+   */
+  private String requestId;
+
   @NotBlank(message = "errorMessage는 필수입니다.")
   private String errorMessage;
 

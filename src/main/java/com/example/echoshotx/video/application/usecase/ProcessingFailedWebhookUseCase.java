@@ -33,15 +33,51 @@ public class ProcessingFailedWebhookUseCase {
 	// 1. 비디오 조회
 	Video video = videoAdaptor.queryById(request.getVideoId());
 	log.warn(
-		"Processing failed webhook received: videoId={}, aiJobId={}, error={}",
+		"Processing failed webhook received: videoId={}, aiJobId={}, requestId={}, currentStatus={}, error={}",
 		request.getVideoId(),
 		request.getAiJobId(),
+		request.getRequestId(),
+		video.getStatus(),
 		request.getErrorMessage());
 
-	// 2. 사용된 크레딧 계산 (환불을 위해)
+	// 2. 멱등성 체크: 이미 FAILED 상태인 경우 중복 처리 방지
+	if (video.getStatus() == com.example.echoshotx.video.domain.entity.VideoStatus.FAILED) {
+	  log.warn(
+		  "Video already failed. Skipping duplicate webhook: videoId={}, aiJobId={}, requestId={}",
+		  request.getVideoId(),
+		  request.getAiJobId(),
+		  request.getRequestId());
+	  return;
+	}
+
+	// 3. 이미 COMPLETED 상태인 경우 실패 웹훅 무시 (완료된 작업은 실패 처리 불가)
+	if (video.getStatus() == com.example.echoshotx.video.domain.entity.VideoStatus.COMPLETED) {
+	  log.error(
+		  "Video already completed. Cannot process failed webhook: videoId={}, aiJobId={}, requestId={}",
+		  request.getVideoId(),
+		  request.getAiJobId(),
+		  request.getRequestId());
+	  throw new IllegalStateException(
+		  String.format("Cannot fail video %d as it is already completed", request.getVideoId()));
+	}
+
+	// 4. aiJobId 검증: 다른 작업의 웹훅인 경우 거부
+	if (video.getAiJobId() != null && !video.getAiJobId().equals(request.getAiJobId())) {
+	  log.error(
+		  "AiJobId mismatch. Expected: {}, Received: {}. videoId={}",
+		  video.getAiJobId(),
+		  request.getAiJobId(),
+		  request.getVideoId());
+	  throw new IllegalArgumentException(
+		  String.format(
+			  "AiJobId mismatch for video %d. Expected: %s, Received: %s",
+			  request.getVideoId(), video.getAiJobId(), request.getAiJobId()));
+	}
+
+	// 5. 사용된 크레딧 계산 (환불을 위해)
 	int usedCredits = calculateUsedCredits(video);
 
-	// 3. 처리 실패 및 알림 발행 (QUEUED/PROCESSING → FAILED)
+	// 6. 처리 실패 및 알림 발행 (QUEUED/PROCESSING → FAILED)
 	String errorMessage =
 		String.format(
 			"[%s] %s",
@@ -49,15 +85,22 @@ public class ProcessingFailedWebhookUseCase {
 			request.getErrorMessage());
 	videoService.failProcessing(video, errorMessage);
 	log.info(
-		"Video processing failed: videoId={}, retryCount={}",
+		"Video processing failed: videoId={}, aiJobId={}, requestId={}, retryCount={}",
 		request.getVideoId(),
+		request.getAiJobId(),
+		request.getRequestId(),
 		video.getRetryCount());
 
-	// 4. 크레딧 환불
+	// 7. 크레딧 환불
 	if (usedCredits > 0) {
 	  creditService.refundCredits(
 		  video.getMemberId(), video.getId(), usedCredits, "영상 처리 실패로 인한 크레딧 환불");
-	  log.info("Credits refunded: videoId={}, amount={}", request.getVideoId(), usedCredits);
+	  log.info(
+		  "Credits refunded: videoId={}, amount={}, aiJobId={}, requestId={}",
+		  request.getVideoId(),
+		  usedCredits,
+		  request.getAiJobId(),
+		  request.getRequestId());
 	}
   }
 
